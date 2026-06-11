@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VA VODACOM CRBT NODES — Vulnerability Remediation Guide</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --red: #f85149;
+    --orange: #d29922;
+    --yellow: #e3b341;
+    --green: #3fb950;
+    --blue: #58a6ff;
+    --purple: #bc8cff;
+    --crit: #ff4757;
+    --high: #ffa502;
+    --med: #eccc68;
+    --low: #70a1ff;
+    --font-mono: 'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.6; }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2128 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 48px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; top: 0; right: 0; width: 400px; height: 100%;
+    background: radial-gradient(ellipse at right, rgba(248,81,73,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(248,81,73,0.12); border: 1px solid rgba(248,81,73,0.3);
+    border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 600;
+    color: var(--red); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px;
+  }
+  .header-badge::before { content: '●'; font-size: 8px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+  header h1 span { color: var(--red); }
+  header p { color: var(--text-muted); font-size: 13px; }
+  .header-meta { display: flex; gap: 32px; margin-top: 24px; flex-wrap: wrap; }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 600; }
+  .meta-value { font-size: 14px; font-weight: 600; color: var(--text); }
+
+  /* LAYOUT */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  main { padding: 32px 48px; }
+
+  /* SCORE CARDS */
+  .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 40px; }
+  .score-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 20px 16px; position: relative; overflow: hidden;
+  }
+  .score-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent);
+  }
+  .score-card.crit { --accent: var(--crit); }
+  .score-card.high { --accent: var(--high); }
+  .score-card.med  { --accent: var(--med); }
+  .score-card.low  { --accent: var(--low); }
+  .score-card.total{ --accent: var(--blue); }
+  .score-num { font-size: 36px; font-weight: 800; line-height: 1; margin-bottom: 4px; color: var(--accent); }
+  .score-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+  /* SECTION HEADERS */
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 20px; margin-top: 40px;
+  }
+  .section-icon { font-size: 18px; }
+  .section-header h2 { font-size: 16px; font-weight: 700; color: var(--text); }
+
+  /* SERVER TABLE */
+  .server-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 32px; }
+  .server-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .server-ip { font-family: var(--font-mono); font-size: 13px; color: var(--blue); font-weight: 700; }
+  .server-name { font-size: 12px; color: var(--text-muted); }
+  .server-os { font-size: 11px; background: rgba(88,166,255,0.1); color: var(--blue); border-radius: 4px; padding: 2px 7px; display: inline-block; margin-top: 2px; width: fit-content; }
+  .server-stats { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .sev-badge {
+    font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 8px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .sev-5 { background: rgba(248,81,73,0.15); color: var(--crit); border: 1px solid rgba(248,81,73,0.3); }
+  .sev-4 { background: rgba(255,165,2,0.12); color: var(--high); border: 1px solid rgba(255,165,2,0.3); }
+  .sev-3 { background: rgba(227,179,65,0.12); color: var(--yellow); border: 1px solid rgba(227,179,65,0.3); }
+
+  /* VULN TABLE */
+  .vuln-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 32px; }
+  .vuln-table th {
+    background: var(--surface2); padding: 10px 14px; text-align: left;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border);
+  }
+  .vuln-table td { padding: 10px 14px; border-bottom: 1px solid rgba(48,54,61,0.6); vertical-align: top; }
+  .vuln-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .sev-pill {
+    font-size: 10px; font-weight: 800; border-radius: 4px; padding: 2px 7px;
+    text-align: center; display: inline-block; min-width: 28px; letter-spacing: 0.05em;
+  }
+  .pill-5 { background: rgba(248,81,73,0.2); color: var(--crit); border: 1px solid rgba(248,81,73,0.4); }
+  .pill-4 { background: rgba(255,165,2,0.15); color: var(--high); border: 1px solid rgba(255,165,2,0.35); }
+  .pill-3 { background: rgba(227,179,65,0.15); color: var(--yellow); border: 1px solid rgba(227,179,65,0.35); }
+  .pill-2 { background: rgba(112,161,255,0.12); color: var(--low); border: 1px solid rgba(112,161,255,0.3); }
+  .vuln-name { font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .vuln-cve { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+  /* REMEDIATION SECTIONS */
+  .remediation-block {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    margin-bottom: 20px; overflow: hidden;
+  }
+  .rem-header {
+    display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+    border-bottom: 1px solid var(--border); background: var(--surface2);
+  }
+  .rem-header h3 { font-size: 14px; font-weight: 700; flex: 1; }
+  .rem-body { padding: 18px; }
+  .step {
+    display: flex; gap: 14px; margin-bottom: 16px; align-items: flex-start;
+  }
+  .step:last-child { margin-bottom: 0; }
+  .step-num {
+    min-width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(88,166,255,0.15); border: 1px solid rgba(88,166,255,0.3);
+    color: var(--blue); font-size: 11px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .step-content { flex: 1; }
+  .step-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+  .step-desc { color: var(--text-muted); font-size: 12px; line-height: 1.6; margin-bottom: 8px; }
+  code, pre {
+    font-family: var(--font-mono);
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 12px; color: #79c0ff; }
+  pre {
+    padding: 12px 14px; font-size: 12px; color: #79c0ff;
+    overflow-x: auto; line-height: 1.7; margin: 8px 0; white-space: pre;
+  }
+  .note {
+    background: rgba(227,179,65,0.08); border: 1px solid rgba(227,179,65,0.25);
+    border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #c9a227;
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .warn {
+    background: rgba(248,81,73,0.08); border: 1px solid rgba(248,81,73,0.25);
+    border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #f85149;
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .info {
+    background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.25);
+    border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #58a6ff;
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; border-radius: 4px; padding: 2px 7px; margin-right: 4px; }
+  .tag-eol { background: rgba(248,81,73,0.2); color: var(--crit); border: 1px solid rgba(248,81,73,0.4); }
+  .tag-kernel { background: rgba(188,140,255,0.15); color: var(--purple); border: 1px solid rgba(188,140,255,0.35); }
+  .tag-app { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.35); }
+  .tag-pkg { background: rgba(88,166,255,0.12); color: var(--blue); border: 1px solid rgba(88,166,255,0.3); }
+  .checklist { list-style: none; margin-top: 8px; }
+  .checklist li { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid rgba(48,54,61,0.4); }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before { content: '☐'; color: var(--blue); margin-top: 1px; flex-shrink: 0; }
+  .priority-row { display: grid; grid-template-columns: 36px 1fr 90px; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(48,54,61,0.5); font-size: 12px; }
+  .priority-row:last-child { border: none; }
+  footer {
+    margin-top: 60px; padding: 24px 48px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: 11px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: gap;
+  }
+  @media (max-width: 700px) {
+    main { padding: 20px 16px; }
+    header { padding: 24px 16px; }
+    .server-grid { grid-template-columns: 1fr; }
+    .score-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-badge">● Live Scan — June 11, 2026</div>
+  <h1>VA VODACOM <span>CRBT NODES</span> — Vulnerability Remediation Guide</h1>
+  <p>Qualys VA Report · Scanned by Mohit Kumar (paytm8mk7) · Paytm · Noida, India</p>
+  <div class="header-meta">
+    <div class="meta-item"><span class="meta-label">Scan Range</span><span class="meta-value">172.18.229.6–8, .10–12</span></div>
+    <div class="meta-item"><span class="meta-label">Active Hosts</span><span class="meta-value">5 Servers</span></div>
+    <div class="meta-item"><span class="meta-label">OS</span><span class="meta-value">Ubuntu Linux 24.04.4</span></div>
+    <div class="meta-item"><span class="meta-label">Total Active Vulns</span><span class="meta-value">544</span></div>
+    <div class="meta-item"><span class="meta-label">Business Risk</span><span class="meta-value" style="color:var(--crit)">32/100</span></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- SUMMARY SCORES -->
+  <div class="score-grid">
+    <div class="score-card crit"><div class="score-num">69</div><div class="score-label">Severity 5 — Critical</div></div>
+    <div class="score-card high"><div class="score-num">331</div><div class="score-label">Severity 4 — High</div></div>
+    <div class="score-card med"><div class="score-num">73</div><div class="score-label">Severity 3 — Medium</div></div>
+    <div class="score-card low"><div class="score-num">27</div><div class="score-label">Severity 2 — Low</div></div>
+    <div class="score-card total"><div class="score-num">505</div><div class="score-label">Total Active Confirmed</div></div>
+  </div>
+
+  <!-- PER-SERVER CHART SECTION -->
+  <div class="section-header" style="margin-top:32px;">
+    <span class="section-icon">📊</span>
+    <h2>Vulnerability Breakdown by Server &amp; Severity</h2>
+  </div>
+
+  <!-- legend -->
+  <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;font-size:12px;color:var(--text-muted);">
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:2px;background:#ff4757;display:inline-block;"></span>Critical (Sev 5)</span>
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:2px;background:#ffa502;display:inline-block;"></span>High (Sev 4)</span>
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:2px;background:#eccc68;display:inline-block;"></span>Medium (Sev 3)</span>
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:2px;background:#70a1ff;display:inline-block;"></span>Low (Sev 2)</span>
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:2px;background:#8b949e;display:inline-block;"></span>Info (Sev 1)</span>
+  </div>
+
+  <!-- stacked bar chart -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:28px;">
+    <canvas id="severityChart" height="280" style="width:100%;display:block;"></canvas>
+  </div>
+
+  <!-- per-server detail cards (5 columns) -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:36px;">
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <div style="background:var(--surface2);padding:10px 14px;border-bottom:1px solid var(--border);">
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--blue);font-weight:700;">172.18.229.6</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">prbt-media-tp-ivr-crbt-1</div>
+        <div style="font-size:10px;color:#3fb950;margin-top:3px;">IVR / CRBT Media</div>
+      </div>
+      <div style="padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#ff4757;font-weight:600;">● Critical (5)</span><span style="font-weight:700;color:var(--text);">12</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#ffa502;font-weight:600;">● High (4)</span><span style="font-weight:700;color:var(--text);">51</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#eccc68;font-weight:600;">● Medium (3)</span><span style="font-weight:700;color:var(--text);">11</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#70a1ff;font-weight:600;">● Low (2)</span><span style="font-weight:700;color:var(--text);">10</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#8b949e;font-weight:600;">● Info (1)</span><span style="font-weight:700;color:var(--text);">1</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 2px;font-size:12px;font-weight:700;"><span style="color:var(--text-muted);">Total Confirmed</span><span style="color:var(--blue);font-size:16px;">85</span></div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:2px solid rgba(255,71,87,0.4);border-radius:10px;overflow:hidden;position:relative;">
+      <div style="position:absolute;top:8px;right:8px;background:rgba(255,71,87,0.2);color:#ff4757;font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px;border:1px solid rgba(255,71,87,0.4);">HIGHEST RISK</div>
+      <div style="background:var(--surface2);padding:10px 14px;border-bottom:1px solid var(--border);">
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--blue);font-weight:700;">172.18.229.7</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">prbt-media-tp-ivr-crbt-2</div>
+        <div style="font-size:10px;color:#3fb950;margin-top:3px;">IVR / CRBT Media</div>
+      </div>
+      <div style="padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#ff4757;font-weight:600;">● Critical (5)</span><span style="font-weight:700;color:var(--text);">20</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#ffa502;font-weight:600;">● High (4)</span><span style="font-weight:700;color:var(--text);">73</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#eccc68;font-weight:600;">● Medium (3)</span><span style="font-weight:700;color:var(--text);">23</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#70a1ff;font-weight:600;">● Low (2)</span><span style="font-weight:700;color:var(--text);">11</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#8b949e;font-weight:600;">● Info (1)</span><span style="font-weight:700;color:var(--text);">1</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 2px;font-size:12px;font-weight:700;"><span style="color:var(--text-muted);">Total Confirmed</span><span style="color:#ff4757;font-size:16px;">128</span></div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <div style="background:var(--surface2);padding:10px 14px;border-bottom:1px solid var(--border);">
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--blue);font-weight:700;">172.18.229.10</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">prbt-sm-sms-ussd-2</div>
+        <div style="font-size:10px;color:#bc8cff;margin-top:3px;">SMS / USSD</div>
+      </div>
+      <div style="padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#ff4757;font-weight:600;">● Critical (5)</span><span style="font-weight:700;color:var(--text);">13</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#ffa502;font-weight:600;">● High (4)</span><span style="font-weight:700;color:var(--text);">72</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#eccc68;font-weight:600;">● Medium (3)</span><span style="font-weight:700;color:var(--text);">13</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#70a1ff;font-weight:600;">● Low (2)</span><span style="font-weight:700;color:var(--text);">2</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#8b949e;font-weight:600;">● Info (1)</span><span style="font-weight:700;color:var(--text);">1</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 2px;font-size:12px;font-weight:700;"><span style="color:var(--text-muted);">Total Confirmed</span><span style="color:var(--blue);font-size:16px;">101</span></div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <div style="background:var(--surface2);padding:10px 14px;border-bottom:1px solid var(--border);">
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--blue);font-weight:700;">172.18.229.11</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">prbt-database-1</div>
+        <div style="font-size:10px;color:#ffa502;margin-top:3px;">Database Primary</div>
+      </div>
+      <div style="padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#ff4757;font-weight:600;">● Critical (5)</span><span style="font-weight:700;color:var(--text);">13</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#ffa502;font-weight:600;">● High (4)</span><span style="font-weight:700;color:var(--text);">72</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#eccc68;font-weight:600;">● Medium (3)</span><span style="font-weight:700;color:var(--text);">13</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#70a1ff;font-weight:600;">● Low (2)</span><span style="font-weight:700;color:var(--text);">2</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#8b949e;font-weight:600;">● Info (1)</span><span style="font-weight:700;color:var(--text);">1</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 2px;font-size:12px;font-weight:700;"><span style="color:var(--text-muted);">Total Confirmed</span><span style="color:var(--blue);font-size:16px;">101</span></div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <div style="background:var(--surface2);padding:10px 14px;border-bottom:1px solid var(--border);">
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--blue);font-weight:700;">172.18.229.12</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">prbt-database-2</div>
+        <div style="font-size:10px;color:#ffa502;margin-top:3px;">Database Replica</div>
+      </div>
+      <div style="padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#ff4757;font-weight:600;">● Critical (5)</span><span style="font-weight:700;color:var(--text);">11</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#ffa502;font-weight:600;">● High (4)</span><span style="font-weight:700;color:var(--text);">63</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#eccc68;font-weight:600;">● Medium (3)</span><span style="font-weight:700;color:var(--text);">13</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#70a1ff;font-weight:600;">● Low (2)</span><span style="font-weight:700;color:var(--text);">2</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:12px;"><span style="color:#8b949e;font-weight:600;">● Info (1)</span><span style="font-weight:700;color:var(--text);">1</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 2px;font-size:12px;font-weight:700;"><span style="color:var(--text-muted);">Total Confirmed</span><span style="color:var(--blue);font-size:16px;">90</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Chart.js script for stacked bar -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script>
+  (function(){
+    var ctx = document.getElementById('severityChart');
+    if(!ctx) return;
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['.6  crbt-1', '.7  crbt-2', '.10  sms', '.11  db-1', '.12  db-2'],
+        datasets: [
+          { label: 'Critical (5)', data: [12,20,13,13,11], backgroundColor: '#ff4757', stack: 's' },
+          { label: 'High (4)',     data: [51,73,72,72,63], backgroundColor: '#ffa502', stack: 's' },
+          { label: 'Medium (3)',   data: [11,23,13,13,13], backgroundColor: '#eccc68', stack: 's' },
+          { label: 'Low (2)',      data: [10,11, 2, 2, 2], backgroundColor: '#70a1ff', stack: 's' },
+          { label: 'Info (1)',     data: [ 1, 1, 1, 1, 1], backgroundColor: '#555e6a', stack: 's' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            mode: 'index', intersect: false,
+            callbacks: {
+              footer: function(items){
+                var total = items.reduce(function(s,i){ return s + i.parsed.y; }, 0);
+                return 'Total: ' + total;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { color: '#8b949e', font: { size: 12 } } },
+          y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(48,54,61,0.6)' },
+               ticks: { color: '#8b949e', font: { size: 12 }, stepSize: 20 } }
+        }
+      }
+    });
+  })();
+  </script>
+
+  <!-- AFFECTED SERVERS SUMMARY TABLE -->
+  <div class="section-header">
+    <span class="section-icon">🖥️</span>
+    <h2>Affected Servers — Quick Reference</h2>
+  </div>
+  <table class="vuln-table" style="margin-bottom:28px;">
+    <thead>
+      <tr>
+        <th>IP Address</th>
+        <th>Hostname</th>
+        <th>Role</th>
+        <th style="color:#ff4757;">● Crit (5)</th>
+        <th style="color:#ffa502;">● High (4)</th>
+        <th style="color:#eccc68;">● Med (3)</th>
+        <th style="color:#70a1ff;">● Low (2)</th>
+        <th style="color:#8b949e;">Info (1)</th>
+        <th>Total</th>
+        <th>Risk Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span style="font-family:var(--font-mono);font-size:12px;color:var(--blue);font-weight:700;">172.18.229.6</span></td>
+        <td><span class="vuln-name" style="font-size:12px;">prbt-media-tp-ivr-crbt-1</span></td>
+        <td><span style="font-size:11px;background:rgba(63,185,80,0.12);color:#3fb950;border:1px solid rgba(63,185,80,0.3);border-radius:4px;padding:2px 6px;">IVR/CRBT</span></td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">12</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">51</td>
+        <td style="text-align:center;font-weight:700;color:#eccc68;">11</td>
+        <td style="text-align:center;font-weight:700;color:#70a1ff;">10</td>
+        <td style="text-align:center;color:var(--text-muted);">1</td>
+        <td style="text-align:center;font-weight:800;color:var(--text);">85</td>
+        <td><div style="background:rgba(255,165,2,0.15);border:1px solid rgba(255,165,2,0.35);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:#ffa502;text-align:center;">3.7</div></td>
+      </tr>
+      <tr style="background:rgba(255,71,87,0.04);">
+        <td><span style="font-family:var(--font-mono);font-size:12px;color:var(--blue);font-weight:700;">172.18.229.7</span></td>
+        <td>
+          <span class="vuln-name" style="font-size:12px;">prbt-media-tp-ivr-crbt-2</span>
+          <span style="display:inline-block;margin-left:6px;background:rgba(255,71,87,0.2);color:#ff4757;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;border:1px solid rgba(255,71,87,0.4);">HIGHEST RISK</span>
+        </td>
+        <td><span style="font-size:11px;background:rgba(63,185,80,0.12);color:#3fb950;border:1px solid rgba(63,185,80,0.3);border-radius:4px;padding:2px 6px;">IVR/CRBT</span></td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">20</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">73</td>
+        <td style="text-align:center;font-weight:700;color:#eccc68;">23</td>
+        <td style="text-align:center;font-weight:700;color:#70a1ff;">11</td>
+        <td style="text-align:center;color:var(--text-muted);">1</td>
+        <td style="text-align:center;font-weight:800;color:#ff4757;font-size:16px;">128</td>
+        <td><div style="background:rgba(255,71,87,0.15);border:1px solid rgba(255,71,87,0.4);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:#ff4757;text-align:center;">4.1</div></td>
+      </tr>
+      <tr>
+        <td><span style="font-family:var(--font-mono);font-size:12px;color:var(--blue);font-weight:700;">172.18.229.10</span></td>
+        <td><span class="vuln-name" style="font-size:12px;">prbt-sm-sms-ussd-2</span></td>
+        <td><span style="font-size:11px;background:rgba(188,140,255,0.12);color:#bc8cff;border:1px solid rgba(188,140,255,0.3);border-radius:4px;padding:2px 6px;">SMS/USSD</span></td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">13</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">72</td>
+        <td style="text-align:center;font-weight:700;color:#eccc68;">13</td>
+        <td style="text-align:center;font-weight:700;color:#70a1ff;">2</td>
+        <td style="text-align:center;color:var(--text-muted);">1</td>
+        <td style="text-align:center;font-weight:800;color:var(--text);">101</td>
+        <td><div style="background:rgba(255,165,2,0.15);border:1px solid rgba(255,165,2,0.35);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:#ffa502;text-align:center;">3.9</div></td>
+      </tr>
+      <tr>
+        <td><span style="font-family:var(--font-mono);font-size:12px;color:var(--blue);font-weight:700;">172.18.229.11</span></td>
+        <td><span class="vuln-name" style="font-size:12px;">prbt-database-1</span></td>
+        <td><span style="font-size:11px;background:rgba(255,165,2,0.12);color:#ffa502;border:1px solid rgba(255,165,2,0.3);border-radius:4px;padding:2px 6px;">DB Primary</span></td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">13</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">72</td>
+        <td style="text-align:center;font-weight:700;color:#eccc68;">13</td>
+        <td style="text-align:center;font-weight:700;color:#70a1ff;">2</td>
+        <td style="text-align:center;color:var(--text-muted);">1</td>
+        <td style="text-align:center;font-weight:800;color:var(--text);">101</td>
+        <td><div style="background:rgba(255,165,2,0.15);border:1px solid rgba(255,165,2,0.35);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:#ffa502;text-align:center;">3.9</div></td>
+      </tr>
+      <tr>
+        <td><span style="font-family:var(--font-mono);font-size:12px;color:var(--blue);font-weight:700;">172.18.229.12</span></td>
+        <td><span class="vuln-name" style="font-size:12px;">prbt-database-2</span></td>
+        <td><span style="font-size:11px;background:rgba(255,165,2,0.12);color:#ffa502;border:1px solid rgba(255,165,2,0.3);border-radius:4px;padding:2px 6px;">DB Replica</span></td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">11</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">63</td>
+        <td style="text-align:center;font-weight:700;color:#eccc68;">13</td>
+        <td style="text-align:center;font-weight:700;color:#70a1ff;">2</td>
+        <td style="text-align:center;color:var(--text-muted);">1</td>
+        <td style="text-align:center;font-weight:800;color:var(--text);">90</td>
+        <td><div style="background:rgba(255,165,2,0.15);border:1px solid rgba(255,165,2,0.35);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:#ffa502;text-align:center;">3.8</div></td>
+      </tr>
+      <tr style="background:var(--surface2);">
+        <td colspan="3" style="font-weight:700;font-size:12px;color:var(--text-muted);padding-top:12px;">TOTALS (all 5 servers)</td>
+        <td style="text-align:center;font-weight:800;color:#ff4757;font-size:14px;">69</td>
+        <td style="text-align:center;font-weight:800;color:#ffa502;font-size:14px;">331</td>
+        <td style="text-align:center;font-weight:800;color:#eccc68;font-size:14px;">73</td>
+        <td style="text-align:center;font-weight:800;color:#70a1ff;font-size:14px;">27</td>
+        <td style="text-align:center;color:var(--text-muted);font-weight:700;">5</td>
+        <td style="text-align:center;font-weight:800;color:var(--blue);font-size:18px;">505</td>
+        <td><div style="background:rgba(255,71,87,0.15);border:1px solid rgba(255,71,87,0.4);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:#ff4757;text-align:center;">Avg 3.8</div></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- APP VS OS CLASSIFICATION SECTION -->
+  <div class="section-header">
+    <span class="section-icon">🔍</span>
+    <h2>Application vs OS Vulnerability Classification</h2>
+  </div>
+
+  <!-- Split donut chart row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;">
+      <canvas id="appOsDonut" width="200" height="200" style="max-width:200px;margin:0 auto;display:block;" role="img" aria-label="Pie chart: Application 74 vulns vs OS 417 vulns"></canvas>
+      <div style="margin-top:14px;display:flex;justify-content:center;gap:20px;font-size:12px;">
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#3fb950;display:inline-block;"></span>Application — 74</span>
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#58a6ff;display:inline-block;"></span>OS / System — 417</span>
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#8b949e;display:inline-block;"></span>Policy — 12</span>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;">
+      <canvas id="appOsBar" height="180" style="width:100%;display:block;" role="img" aria-label="Grouped bar chart of Application vs OS vulnerabilities per server"></canvas>
+    </div>
+  </div>
+
+  <!-- App vs OS per server breakdown table -->
+  <table class="vuln-table" style="margin-bottom:32px;">
+    <thead>
+      <tr>
+        <th>Server</th>
+        <th>IP</th>
+        <th style="color:#3fb950;">🟢 Application Vulns</th>
+        <th style="color:#3fb950;">App Sev 5</th>
+        <th style="color:#3fb950;">App Sev 4</th>
+        <th style="color:#58a6ff;">🔵 OS / System Vulns</th>
+        <th style="color:#58a6ff;">OS Sev 5</th>
+        <th style="color:#58a6ff;">OS Sev 4</th>
+        <th>Policy</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="vuln-name" style="font-size:12px;">prbt-media-tp-ivr-crbt-1</span><br><span style="font-size:10px;color:var(--text-muted);">IVR/CRBT Media</span></td>
+        <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--blue);">172.18.229.6</span></td>
+        <td style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#3fb950;">26</div>
+          <div style="font-size:10px;color:var(--text-muted);">Apache Tomcat (21 CGI)<br>Struts / Log4j / Java (5)</div>
+        </td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">5</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">16</td>
+        <td style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#58a6ff;">56</div>
+          <div style="font-size:10px;color:var(--text-muted);">Ubuntu packages (52)<br>Linux kernel LPE (4)</div>
+        </td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">7</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">35</td>
+        <td style="text-align:center;color:var(--text-muted);">3</td>
+        <td style="text-align:center;font-weight:800;color:var(--text);">85</td>
+      </tr>
+      <tr style="background:rgba(255,71,87,0.03);">
+        <td>
+          <span class="vuln-name" style="font-size:12px;">prbt-media-tp-ivr-crbt-2</span>
+          <span style="display:inline-block;margin-left:6px;background:rgba(255,71,87,0.2);color:#ff4757;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;border:1px solid rgba(255,71,87,0.4);">HIGHEST RISK</span>
+          <br><span style="font-size:10px;color:var(--text-muted);">IVR/CRBT Media</span>
+        </td>
+        <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--blue);">172.18.229.7</span></td>
+        <td style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#3fb950;">21</div>
+          <div style="font-size:10px;color:var(--text-muted);">Apache Tomcat (21 CGI)<br>Struts (in OS bundle)</div>
+        </td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">7</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">10</td>
+        <td style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#58a6ff;">104</div>
+          <div style="font-size:10px;color:var(--text-muted);">Ubuntu packages (100)<br>Linux kernel LPE (4)</div>
+        </td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">13</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">63</td>
+        <td style="text-align:center;color:var(--text-muted);">3</td>
+        <td style="text-align:center;font-weight:800;color:#ff4757;font-size:16px;">128</td>
+      </tr>
+      <tr>
+        <td><span class="vuln-name" style="font-size:12px;">prbt-sm-sms-ussd-2</span><br><span style="font-size:10px;color:var(--text-muted);">SMS / USSD</span></td>
+        <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--blue);">172.18.229.10</span></td>
+        <td style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#3fb950;">9</div>
+          <div style="font-size:10px;color:var(--text-muted);">Struts / Log4j / Java<br>EOL Software (4)</div>
+        </td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">4</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">4</td>
+        <td style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#58a6ff;">89</div>
+          <div style="font-size:10px;color:var(--text-muted);">Ubuntu packages (85)<br>Linux kernel LPE (4)</div>
+        </td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">9</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">68</td>
+        <td style="text-align:center;color:var(--text-muted);">2</td>
+        <td style="text-align:center;font-weight:800;color:var(--text);">101</td>
+      </tr>
+      <tr>
+        <td><span class="vuln-name" style="font-size:12px;">prbt-database-1</span><br><span style="font-size:10px;color:var(--text-muted);">Database Primary</span></td>
+        <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--blue);">172.18.229.11</span></td>
+        <td style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#3fb950;">9</div>
+          <div style="font-size:10px;color:var(--text-muted);">Struts / Log4j / Java<br>EOL Software (4)</div>
+        </td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">4</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">4</td>
+        <td style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#58a6ff;">89</div>
+          <div style="font-size:10px;color:var(--text-muted);">Ubuntu packages (85)<br>Linux kernel LPE (4)</div>
+        </td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">9</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">68</td>
+        <td style="text-align:center;color:var(--text-muted);">2</td>
+        <td style="text-align:center;font-weight:800;color:var(--text);">101</td>
+      </tr>
+      <tr>
+        <td><span class="vuln-name" style="font-size:12px;">prbt-database-2</span><br><span style="font-size:10px;color:var(--text-muted);">Database Replica</span></td>
+        <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--blue);">172.18.229.12</span></td>
+        <td style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#3fb950;">9</div>
+          <div style="font-size:10px;color:var(--text-muted);">Struts / Log4j / Java<br>EOL Software (4)</div>
+        </td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">4</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">4</td>
+        <td style="text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#58a6ff;">79</div>
+          <div style="font-size:10px;color:var(--text-muted);">Ubuntu packages (75)<br>Linux kernel LPE (4)</div>
+        </td>
+        <td style="text-align:center;font-weight:700;color:#ff4757;">7</td>
+        <td style="text-align:center;font-weight:700;color:#ffa502;">55</td>
+        <td style="text-align:center;color:var(--text-muted);">2</td>
+        <td style="text-align:center;font-weight:800;color:var(--text);">90</td>
+      </tr>
+      <tr style="background:var(--surface2);">
+        <td colspan="2" style="font-weight:700;font-size:12px;color:var(--text-muted);">TOTALS (all 5 servers)</td>
+        <td style="text-align:center;font-size:18px;font-weight:800;color:#3fb950;">74</td>
+        <td colspan="2" style="text-align:center;font-size:11px;color:var(--text-muted);">App-layer</td>
+        <td style="text-align:center;font-size:18px;font-weight:800;color:#58a6ff;">417</td>
+        <td colspan="2" style="text-align:center;font-size:11px;color:var(--text-muted);">OS/System</td>
+        <td style="text-align:center;font-weight:700;color:var(--text-muted);">12</td>
+        <td style="text-align:center;font-size:18px;font-weight:800;color:var(--blue);">503</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Classification key cards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px;">
+    <div style="background:var(--surface);border:1px solid rgba(63,185,80,0.3);border-radius:10px;overflow:hidden;">
+      <div style="background:rgba(63,185,80,0.08);border-bottom:1px solid rgba(63,185,80,0.2);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:16px;">🟢</span>
+        <span style="font-weight:700;font-size:14px;color:#3fb950;">Application-Layer Vulnerabilities</span>
+        <span style="margin-left:auto;background:rgba(63,185,80,0.15);color:#3fb950;font-size:11px;font-weight:700;border-radius:4px;padding:2px 8px;border:1px solid rgba(63,185,80,0.35);">74 total</span>
+      </div>
+      <div style="padding:14px 16px;font-size:12px;color:var(--text-muted);line-height:1.8;">
+        <div style="margin-bottom:6px;color:var(--text);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;">What it means</div>
+        Flaws in deployed <strong style="color:var(--text);">web applications and middleware</strong> — not the OS itself. Fixing these requires application-level action (upgrading, patching, or replacing app components).
+        <div style="margin-top:10px;margin-bottom:6px;color:var(--text);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;">Components affected</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>Apache Tomcat 8.5 / 9.0 / 11.0</span><span style="color:#ffa502;font-weight:700;">Sev 2–5</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>Apache Struts 1 &amp; 2 (S2-053/061/062/066)</span><span style="color:#ff4757;font-weight:700;">Sev 4–5</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>Apache Log4j 1.x / 1.2 (RCE)</span><span style="color:#ffa502;font-weight:700;">Sev 3–4</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>Oracle Java SE (CPU Jan/Oct 2025–26)</span><span style="color:#ffa502;font-weight:700;">Sev 3–4</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>EOL: Struts 1, Tomcat 8.5, Log4j 1.x, Node.js 18</span><span style="color:#ff4757;font-weight:700;">Sev 5</span></div>
+        </div>
+        <div style="margin-top:10px;margin-bottom:6px;color:var(--text);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;">Fix approach</div>
+        Upgrade / replace application jars, WAR files, frameworks. Requires <strong style="color:var(--text);">dev team / app owner</strong> involvement. Redeployment needed.
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid rgba(88,166,255,0.3);border-radius:10px;overflow:hidden;">
+      <div style="background:rgba(88,166,255,0.08);border-bottom:1px solid rgba(88,166,255,0.2);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:16px;">🔵</span>
+        <span style="font-weight:700;font-size:14px;color:#58a6ff;">OS / System-Layer Vulnerabilities</span>
+        <span style="margin-left:auto;background:rgba(88,166,255,0.12);color:#58a6ff;font-size:11px;font-weight:700;border-radius:4px;padding:2px 8px;border:1px solid rgba(88,166,255,0.3);">417 total</span>
+      </div>
+      <div style="padding:14px 16px;font-size:12px;color:var(--text-muted);line-height:1.8;">
+        <div style="margin-bottom:6px;color:var(--text);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;">What it means</div>
+        Flaws in <strong style="color:var(--text);">Ubuntu system packages, Linux kernel, and core libraries</strong>. Fixed by running <code>apt-get upgrade</code> and rebooting — no app changes needed.
+        <div style="margin-top:10px;margin-bottom:6px;color:var(--text);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;">Components affected</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>Linux kernel (Dirty Frag LPE, USN-8254/8278/8179)</span><span style="color:#ff4757;font-weight:700;">Sev 5</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>OpenSSL / GnuTLS / pyOpenSSL (TLS stack)</span><span style="color:#ff4757;font-weight:700;">Sev 5</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>AppArmor (CrackArmor) — sandbox bypass</span><span style="color:#ff4757;font-weight:700;">Sev 5</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>OpenSSH, BIND, LibTIFF, inetutils, libarchive</span><span style="color:#ff4757;font-weight:700;">Sev 4–5</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>nginx, redis, rsync, pip, systemd, Vim, dpkg…</span><span style="color:#ffa502;font-weight:700;">Sev 4</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(48,54,61,0.4);"><span>40+ Ubuntu CVE-specific package updates</span><span style="color:#ffa502;font-weight:700;">Sev 4</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>curl, systemd, polkit, MySQL, XZ Utils…</span><span style="color:#eccc68;font-weight:700;">Sev 3</span></div>
+        </div>
+        <div style="margin-top:10px;margin-bottom:6px;color:var(--text);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;">Fix approach</div>
+        Run <code>apt-get update && apt-get upgrade -y</code> on all 5 servers, then <strong style="color:var(--text);">reboot</strong>. Handled entirely by the <strong style="color:var(--text);">infra/ops team</strong>. No app changes required.
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script>
+  (function(){
+    var dc = document.getElementById('appOsDonut');
+    if(dc) {
+      new Chart(dc, {
+        type: 'doughnut',
+        data: {
+          labels: ['Application','OS / System','Policy/Info'],
+          datasets:[{ data:[74,417,12],
+            backgroundColor:['#3fb950','#58a6ff','#555e6a'],
+            borderColor:['#161b22','#161b22','#161b22'],
+            borderWidth: 3, hoverOffset: 6
+          }]
+        },
+        options:{
+          responsive:false, cutout:'65%',
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.parsed;}}}}
+        }
+      });
+    }
+    var bc = document.getElementById('appOsBar');
+    if(bc){
+      new Chart(bc, {
+        type:'bar',
+        data:{
+          labels:['.6 crbt-1','.7 crbt-2','.10 sms','.11 db-1','.12 db-2'],
+          datasets:[
+            {label:'Application', data:[26,21,9,9,9],  backgroundColor:'#3fb950'},
+            {label:'OS / System', data:[56,104,89,89,79], backgroundColor:'#58a6ff'},
+            {label:'Policy',      data:[3,3,2,2,2],     backgroundColor:'#555e6a'}
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},
+          scales:{
+            x:{stacked:false, grid:{display:false}, ticks:{color:'#8b949e',font:{size:11}}},
+            y:{beginAtZero:true, grid:{color:'rgba(48,54,61,0.6)'}, ticks:{color:'#8b949e',font:{size:11}}}
+          }
+        }
+      });
+    }
+  })();
+  </script>
+
+  <!-- TOP VULNERABILITIES TABLE -->
+  <div class="section-header">
+    <span class="section-icon">🚨</span>
+    <h2>Critical & High Vulnerabilities Found</h2>
+  </div>
+  <table class="vuln-table">
+    <thead>
+      <tr>
+        <th>Sev</th>
+        <th>Vulnerability</th>
+        <th>CVEs</th>
+        <th>Type</th>
+        <th>Tag</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">EOL/Obsolete: Apache Struts 1 Detected</div></td>
+        <td class="vuln-cve">N/A (End-of-Life)</td>
+        <td><span class="tag tag-eol">EOL</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">EOL/Obsolete: Apache Tomcat 8.5.x Detected</div></td>
+        <td class="vuln-cve">N/A (End-of-Life)</td>
+        <td><span class="tag tag-eol">EOL</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">EOL/Obsolete: Apache Log4j 1.X Detected</div></td>
+        <td class="vuln-cve">N/A (End-of-Life)</td>
+        <td><span class="tag tag-eol">EOL</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">EOL/Obsolete: Node.js 18.x Detected</div></td>
+        <td class="vuln-cve">N/A (End-of-Life)</td>
+        <td><span class="tag tag-eol">EOL</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Apache Struts Freemarker Tag RCE (S2-053)</div></td>
+        <td class="vuln-cve">CVE-2017-12611</td>
+        <td><span class="tag tag-app">App</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Apache Tomcat 11.0 EncryptInterceptor Padding Oracle</div></td>
+        <td class="vuln-cve">CVE-2026-29146</td>
+        <td><span class="tag tag-app">App</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Apache Tomcat 11.0 Directory Traversal</div></td>
+        <td class="vuln-cve">CVE-2025-55752</td>
+        <td><span class="tag tag-app">App</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Apache Tomcat HTTP/2 DoS (client-triggered stream reset)</div></td>
+        <td class="vuln-cve">—</td>
+        <td><span class="tag tag-app">App</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Linux Kernel LPE (Dirty Frag) CVE-2026-43284</div></td>
+        <td class="vuln-cve">CVE-2026-43284</td>
+        <td><span class="tag tag-kernel">Kernel</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Linux Kernel LPE (Dirty Frag) CVE-2026-43500</div></td>
+        <td class="vuln-cve">CVE-2026-43500</td>
+        <td><span class="tag tag-kernel">Kernel</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Ubuntu AppArmor Multiple Vulns (CrackArmor)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-kernel">Kernel</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">OpenSSL Vulnerabilities (USN-8414-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Linux Kernel Vulns (USN-8254-1, USN-8278-1, USN-8179-1)</div></td>
+        <td class="vuln-cve">CVE-2026-23112, CVE-2026-23231, CVE-2026-23273</td>
+        <td><span class="tag tag-kernel">Kernel</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">GnuTLS Vulnerabilities (USN-8284-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Lodash Vulnerabilities (USN-8411-1)</div></td>
+        <td class="vuln-cve">CVE-2020-8203, CVE-2021-23337, CVE-2026-4800</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">BIND Vulnerabilities (USN-8293-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">LibTIFF Vulnerabilities (USN-8113-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Redis + Lua Vulnerabilities (USN-8169-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Inetutils Vulnerabilities (USN-8387-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">Apache HTTP Server Vulns (USN-8239-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-app">App</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">pyOpenSSL Vulnerabilities (USN-8115-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">XML::Parser Vulnerabilities (USN-8174-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-5">5</span></td>
+        <td><div class="vuln-name">libarchive Vulnerabilities (USN-8292-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">Apache Struts2 RCE (S2-061, S2-062, S2-066)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-app">App</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">Apache Struts XXE (S2-069)</div></td>
+        <td class="vuln-cve">—</td>
+        <td><span class="tag tag-app">App</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">Apache Log4j 1.2 Remote Code Execution</div></td>
+        <td class="vuln-cve">CVE-2019-17571</td>
+        <td><span class="tag tag-app">App</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">Apache Tomcat 11.0 / 9.0 Information Disclosure (CVE-2026-34487)</div></td>
+        <td class="vuln-cve">CVE-2026-34487</td>
+        <td><span class="tag tag-app">App</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">Linux Kernel LPE Fragnesia (CVE-2026-46300)</div></td>
+        <td class="vuln-cve">CVE-2026-46300</td>
+        <td><span class="tag tag-kernel">Kernel</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">OpenSSH Vulnerabilities (USN-8222-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">Oracle Java SE Critical Patch Updates (Jan 2026, Oct 2025)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">nginx Vulnerabilities (USN-8271-1, USN-8354-1, USN-8398-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">pip / wheel Vulnerabilities (USN-8344-1, USN-8221-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">PyJWT Vulnerability (USN-8133-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">rsync Vulnerabilities (USN-8283-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">Redis Vulnerability (USN-8120-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+      <tr>
+        <td><span class="sev-pill pill-4">4</span></td>
+        <td><div class="vuln-name">Memcached Vulnerabilities (USN-8320-1)</div></td>
+        <td class="vuln-cve">Multiple CVEs</td>
+        <td><span class="tag tag-pkg">Pkg</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- REMEDIATION GUIDE -->
+  <div class="section-header">
+    <span class="section-icon">🔧</span>
+    <h2>Step-by-Step Remediation Guide</h2>
+  </div>
+
+  <!-- STEP 0: PRIORITY ORDER -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-5">!</span>
+      <h3>Recommended Fix Priority Order (All 5 Servers)</h3>
+    </div>
+    <div class="rem-body">
+      <div class="priority-row" style="font-weight:700;font-size:11px;color:var(--text-muted);padding:4px 0">
+        <div>Priority</div><div>Action</div><div>Risk</div>
+      </div>
+      <div class="priority-row"><span class="sev-pill pill-5">1</span><span>Upgrade / Replace EOL Software (Struts 1, Tomcat 8.5, Log4j 1.x, Node.js 18)</span><span style="color:var(--crit)">Critical</span></div>
+      <div class="priority-row"><span class="sev-pill pill-5">2</span><span>Patch Linux Kernel (Dirty Frag LPE, USN-8254/8278/8179)</span><span style="color:var(--crit)">Critical</span></div>
+      <div class="priority-row"><span class="sev-pill pill-5">3</span><span>Patch AppArmor (CrackArmor) & reboot</span><span style="color:var(--crit)">Critical</span></div>
+      <div class="priority-row"><span class="sev-pill pill-5">4</span><span>Patch Apache Tomcat (Padding Oracle, Dir Traversal, DoS, Info Disclosure)</span><span style="color:var(--crit)">Critical</span></div>
+      <div class="priority-row"><span class="sev-pill pill-5">5</span><span>Fix Apache Struts RCE vulnerabilities (S2-053, S2-061, S2-062, S2-066, S2-069)</span><span style="color:var(--crit)">Critical</span></div>
+      <div class="priority-row"><span class="sev-pill pill-5">6</span><span>Patch OpenSSL, GnuTLS, pyOpenSSL (TLS/crypto stack)</span><span style="color:var(--crit)">Critical</span></div>
+      <div class="priority-row"><span class="sev-pill pill-4">7</span><span>Patch OpenSSH (USN-8222-1)</span><span style="color:var(--high)">High</span></div>
+      <div class="priority-row"><span class="sev-pill pill-4">8</span><span>Patch Oracle Java SE (CPUJAN2026, CPUOCT2025)</span><span style="color:var(--high)">High</span></div>
+      <div class="priority-row"><span class="sev-pill pill-4">9</span><span>Patch Log4j 1.2 RCE (upgrade to Log4j 2.x / replace)</span><span style="color:var(--high)">High</span></div>
+      <div class="priority-row"><span class="sev-pill pill-4">10</span><span>Patch remaining Ubuntu packages (nginx, pip, redis, rsync, Lodash, etc.)</span><span style="color:var(--high)">High</span></div>
+    </div>
+  </div>
+
+  <!-- FIX 1: UBUNTU PACKAGE UPDATES -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-5">5/4</span>
+      <h3>1. Ubuntu System-Wide Package Updates (Apply to ALL 5 Servers)</h3>
+      <span class="tag tag-pkg">Packages</span>
+    </div>
+    <div class="rem-body">
+      <div class="note">⚡ This single command addresses the bulk of Sev 4–5 Ubuntu package CVEs: OpenSSL, GnuTLS, nginx, pip, rsync, Lodash, redis, libarchive, inetutils, BIND, LibTIFF, OpenSSH, pyOpenSSL, PyJWT, urllib3, Memcached, wheel, kmod, libpng, jq, shell-quote, pyasn1, Twisted, Composer, libssh/libssh2, nghttp2, dpkg, NASM, Bouncy Castle, Symfony, Vim, GDK-PixBuf and many more.</div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Connect to each server and run a full system update</div>
+          <pre>sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt-get dist-upgrade -y
+sudo apt-get autoremove -y</pre>
+          <div class="step-desc">Run this on all five servers: .6, .7, .8, .10, .11, .12 (one by one or via Ansible/parallel-ssh).</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Reboot each server (REQUIRED for kernel and AppArmor patches)</div>
+          <pre>sudo reboot</pre>
+          <div class="step-desc">Kernel patches only take effect after reboot. Schedule maintenance windows for production servers.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Verify patched kernel and key packages</div>
+          <pre>uname -r                        # verify new kernel version
+openssl version                 # check OpenSSL version
+dpkg -l | grep -E 'nginx|redis|openssh-server|bind9|rsync'</pre>
+        </div>
+      </div>
+      <div class="info">ℹ️ For database servers (.11, .12) — stagger reboots to maintain DB HA. Reboot replica first, promote if needed, then reboot primary.</div>
+    </div>
+  </div>
+
+  <!-- FIX 2: EOL SOFTWARE -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-5">5</span>
+      <h3>2. Replace End-of-Life (EOL) Software</h3>
+      <span class="tag tag-eol">EOL</span>
+    </div>
+    <div class="rem-body">
+      <div class="warn">⚠️ EOL software receives NO security patches. These MUST be replaced — apt-upgrade alone will NOT fix these.</div>
+
+      <div class="step">
+        <div class="step-num">A</div>
+        <div class="step-content">
+          <div class="step-title">Apache Struts 1 → Migrate to Struts 2.5.x / 6.x (or Spring MVC)</div>
+          <div class="step-desc">Struts 1 has been EOL since 2013 and has no patches. Applications using it must be migrated.</div>
+          <pre># Identify apps using Struts 1 (look for struts-1.x.jar)
+find / -name "struts-1.*.jar" 2>/dev/null
+find /opt /var/lib -name "struts.jar" 2>/dev/null
+
+# Migration path:
+# → Struts 2: https://struts.apache.org/migration.html
+# → For new apps, prefer Spring Boot / Jakarta EE</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">B</div>
+        <div class="step-content">
+          <div class="step-title">Apache Tomcat 8.5.x → Upgrade to Tomcat 10.1.x or 11.0.x</div>
+          <div class="step-desc">Tomcat 8.5 is EOL. Upgrade to 10.1.x (Jakarta EE 10) or 11.0.x (latest LTS).</div>
+          <pre># Check current Tomcat version
+/opt/tomcat/bin/version.sh
+catalina.sh version
+
+# Download latest stable
+wget https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.x/bin/apache-tomcat-10.1.x.tar.gz
+
+# Stop old Tomcat, backup webapps, install new version
+sudo systemctl stop tomcat
+sudo tar -xzf apache-tomcat-10.1.x.tar.gz -C /opt/
+sudo cp -r /opt/tomcat/webapps/* /opt/apache-tomcat-10.1.x/webapps/
+sudo systemctl start tomcat-10</pre>
+          <div class="note">⚠️ Tomcat 10+ uses Jakarta EE namespaces (javax.* → jakarta.*). Test apps carefully before migrating to production.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">C</div>
+        <div class="step-content">
+          <div class="step-title">Apache Log4j 1.x → Migrate to Log4j 2.24+ or SLF4J/Logback</div>
+          <div class="step-desc">Log4j 1.x is EOL since 2015 and has critical RCE vulnerabilities.</div>
+          <pre># Find all log4j 1.x jars in the system
+find / -name "log4j-1.*.jar" -o -name "log4j.jar" 2>/dev/null | grep -v proc
+
+# In Maven projects, replace:
+# <dependency>
+#   <groupId>log4j</groupId>
+#   <artifactId>log4j</artifactId>   ← REMOVE THIS
+# </dependency>
+
+# Add Log4j 2:
+# <dependency>
+#   <groupId>org.apache.logging.log4j</groupId>
+#   <artifactId>log4j-core</artifactId>
+#   <version>2.24.3</version>
+# </dependency></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">D</div>
+        <div class="step-content">
+          <div class="step-title">Node.js 18.x (EOL) → Upgrade to Node.js 22.x LTS</div>
+          <div class="step-desc">Node.js 18 reached EOL in April 2025. Upgrade to Node.js 22 (current LTS).</div>
+          <pre># Using nvm (recommended)
+nvm install 22
+nvm use 22
+nvm alias default 22
+
+# Or using NodeSource apt repo
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verify
+node --version   # Should show v22.x.x
+npm --version
+
+# Update npm itself
+npm install -g npm@latest
+
+# Also update lodash to latest in your projects:
+npm install lodash@latest  # or: npm audit fix</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIX 3: KERNEL -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-5">5</span>
+      <h3>3. Linux Kernel — Local Privilege Escalation (Dirty Frag / LPE)</h3>
+      <span class="tag tag-kernel">Kernel</span>
+    </div>
+    <div class="rem-body">
+      <div class="warn">⚠️ CVE-2026-43284, CVE-2026-43500 (Dirty Frag), CVE-2026-46300 (Fragnesia), USN-8254-1, USN-8278-1, USN-8179-1 all require kernel upgrade + reboot.</div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Update kernel via apt (Ubuntu 24.04)</div>
+          <pre>sudo apt-get update
+sudo apt-get install --only-upgrade linux-image-$(uname -r) linux-headers-$(uname -r)
+# Or upgrade all kernel packages:
+sudo apt-get install -y linux-generic linux-headers-generic linux-image-generic</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Reboot and verify</div>
+          <pre>sudo reboot
+# After reboot:
+uname -r   # Confirm new kernel version
+apt-cache policy linux-image-generic   # Confirm installed == candidate</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Interim mitigation (if reboot cannot happen immediately)</div>
+          <div class="step-desc">Restrict local user access to minimize LPE risk until reboot is possible:</div>
+          <pre># Disable user namespaces (mitigates some LPE vectors)
+sudo sysctl -w kernel.unprivileged_userns_clone=0
+echo 'kernel.unprivileged_userns_clone=0' | sudo tee -a /etc/sysctl.conf
+
+# Ensure non-root users cannot run dangerous SUID binaries
+sudo chmod u-s /usr/bin/newgrp /usr/bin/pkexec 2>/dev/null || true</pre>
+          <div class="info">ℹ️ sysctl mitigation is temporary. A full reboot with updated kernel is the only true fix.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIX 4: APPARMOR -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-5">5</span>
+      <h3>4. Ubuntu AppArmor — CrackArmor Multiple Vulnerabilities</h3>
+      <span class="tag tag-kernel">Kernel</span>
+    </div>
+    <div class="rem-body">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Upgrade AppArmor packages</div>
+          <pre>sudo apt-get update
+sudo apt-get install --only-upgrade apparmor apparmor-utils apparmor-profiles</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Reload AppArmor profiles and verify enforce mode</div>
+          <pre>sudo systemctl restart apparmor
+sudo aa-status   # All critical profiles should show "enforce" mode
+
+# Switch any in complain mode to enforce:
+sudo aa-enforce /etc/apparmor.d/*</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIX 5: APACHE STRUTS -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-5">5</span>
+      <h3>5. Apache Struts 2 — RCE Vulnerabilities (S2-053, S2-061, S2-062, S2-066)</h3>
+      <span class="tag tag-app">App</span>
+    </div>
+    <div class="rem-body">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Check current Struts 2 version</div>
+          <pre>find / -name "struts2-core-*.jar" 2>/dev/null
+# or check WEB-INF/lib/ of deployed apps</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Upgrade to Apache Struts 2.5.33 or 6.4.0 (latest stable)</div>
+          <pre># Download from: https://struts.apache.org/download.html
+wget https://downloads.apache.org/struts/2.5.33/struts-2.5.33-all.zip
+
+# For Maven projects, update pom.xml:
+# <struts2.version>2.5.33</struts2.version>
+
+# For Gradle:
+# implementation 'org.apache.struts:struts2-core:2.5.33'</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Apply S2-069 (XXE) — Disable XML external entity processing</div>
+          <pre># In struts.xml, add:
+&lt;constant name="struts.enable.DynamicMethodInvocation" value="false"/&gt;
+&lt;constant name="struts.devMode" value="false"/&gt;
+
+# In web.xml, restrict allowed actions to prevent S2-062:
+# Use a whitelisted action mapping approach</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIX 6: TOMCAT -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-5">5</span>
+      <h3>6. Apache Tomcat 9.0 / 11.0 — Padding Oracle, Directory Traversal, DoS</h3>
+      <span class="tag tag-app">App</span>
+    </div>
+    <div class="rem-body">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Upgrade Tomcat 11.0 to 11.0.9+ and Tomcat 9.0 to 9.0.102+</div>
+          <pre># Check version
+/opt/tomcat/bin/version.sh
+
+# Download latest Tomcat 11.0 from:
+# https://tomcat.apache.org/download-11.cgi
+
+# Download latest Tomcat 9.0 from:
+# https://tomcat.apache.org/download-90.cgi
+
+sudo systemctl stop tomcat
+# backup existing install, then replace with new version
+sudo tar -xzf apache-tomcat-11.0.x.tar.gz -C /opt/
+sudo systemctl start tomcat</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Harden EncryptInterceptor (CVE-2026-29146 mitigation)</div>
+          <pre># In server.xml, ensure EncryptInterceptor uses strong settings:
+# &lt;Receiver className="org.apache.catalina.tribes.transport.nio.NioReceiver"
+#   encryptionAlgorithm="AES/GCM/NoPadding"
+#   encryptionKeyLength="256" /&gt;</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Mitigate HTTP/2 DoS — limit concurrent streams</div>
+          <pre># In server.xml connector:
+&lt;Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+    maxConcurrentStreamExecution="20"
+    maxHeaderCount="100" /&gt;</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Fix CVE-2026-43512 — Digest Auth unknown user bypass</div>
+          <div class="step-desc">Ensure you run Tomcat 9.0.102+ which patches this. If you use Digest auth, switch to client certificates or JWT-based auth as a stronger alternative.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIX 7: OPENSSL / TLS STACK -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-5">5</span>
+      <h3>7. OpenSSL / GnuTLS / pyOpenSSL TLS Stack (USN-8414-1, USN-8284-1, USN-8115-1)</h3>
+      <span class="tag tag-pkg">Packages</span>
+    </div>
+    <div class="rem-body">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Upgrade OpenSSL, GnuTLS, and pyOpenSSL via apt</div>
+          <pre>sudo apt-get update
+sudo apt-get install --only-upgrade openssl libssl3 libssl-dev
+sudo apt-get install --only-upgrade libgnutls30 gnutls-bin
+sudo apt-get install --only-upgrade python3-openssl</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Restart services that use TLS</div>
+          <pre>sudo systemctl restart nginx apache2 ssh
+# Restart any Java app servers (Tomcat) too:
+sudo systemctl restart tomcat</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Verify new OpenSSL version</div>
+          <pre>openssl version -a
+# Should show latest patched version for Ubuntu 24.04</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIX 8: JAVA -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-4">4</span>
+      <h3>8. Oracle Java SE — Critical Patch Updates (CPUJAN2026, CPUOCT2025)</h3>
+      <span class="tag tag-pkg">Packages</span>
+    </div>
+    <div class="rem-body">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Check Java version in use</div>
+          <pre>java -version
+update-alternatives --list java</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">If using Oracle JDK 8 — upgrade to latest 8u451+ or migrate to JDK 17/21 LTS</div>
+          <pre># Recommended: Migrate to OpenJDK 21 LTS (free, well-supported)
+sudo apt-get install openjdk-21-jdk
+
+# Update JAVA_HOME
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+echo 'JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64' >> /etc/environment
+
+# If Oracle JDK must be used, download latest from:
+# https://www.oracle.com/java/technologies/downloads/</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIX 9: OPENSSH -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-4">4</span>
+      <h3>9. OpenSSH Vulnerabilities (USN-8222-1)</h3>
+      <span class="tag tag-pkg">Packages</span>
+    </div>
+    <div class="rem-body">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Upgrade OpenSSH</div>
+          <pre>sudo apt-get update
+sudo apt-get install --only-upgrade openssh-server openssh-client
+sudo systemctl restart sshd</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Harden SSH configuration</div>
+          <pre># Edit /etc/ssh/sshd_config:
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+MaxAuthTries 3
+Protocol 2
+X11Forwarding no
+AllowTcpForwarding no
+
+sudo systemctl restart sshd</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIX 10: DATABASE SERVERS SPECIFIC -->
+  <div class="remediation-block">
+    <div class="rem-header">
+      <span class="sev-pill pill-3">3</span>
+      <h3>10. Database Servers (.11, .12) — MySQL / Redis / Memcached</h3>
+      <span class="tag tag-pkg">Packages</span>
+    </div>
+    <div class="rem-body">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Patch MySQL (USN-8363-1)</div>
+          <pre>sudo apt-get update
+sudo apt-get install --only-upgrade mysql-server mysql-client
+sudo systemctl restart mysql</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Patch Redis (USN-8120-1, USN-8169-1)</div>
+          <pre>sudo apt-get install --only-upgrade redis-server redis-tools
+sudo systemctl restart redis</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Patch Memcached (USN-8320-1)</div>
+          <pre>sudo apt-get install --only-upgrade memcached
+sudo systemctl restart memcached</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST-REMEDIATION -->
+  <div class="section-header">
+    <span class="section-icon">✅</span>
+    <h2>Post-Remediation Verification Checklist</h2>
+  </div>
+  <div class="remediation-block">
+    <div class="rem-body">
+      <ul class="checklist">
+        <li>Run <code>sudo apt-get update && sudo apt-get upgrade -y</code> on all 5 servers and confirm 0 packages pending</li>
+        <li>Reboot all servers and verify new kernel via <code>uname -r</code></li>
+        <li>Confirm AppArmor enforce mode via <code>aa-status</code></li>
+        <li>Verify Tomcat version upgraded to 11.0.9+ / 9.0.102+ via <code>catalina.sh version</code></li>
+        <li>Confirm Struts 1 jars are fully removed from all application deployments</li>
+        <li>Confirm Log4j 1.x jars are fully removed and applications use Log4j 2.24+ or Logback</li>
+        <li>Verify Node.js 22.x is active: <code>node --version</code></li>
+        <li>Verify Tomcat 8.5 is no longer installed or running</li>
+        <li>Run Qualys re-scan to confirm resolved vulnerabilities</li>
+        <li>Review Unix accounts with root UID/GID (reported in scan) and remove unauthorized accounts</li>
+        <li>Restrict open TCP listening ports to only necessary services</li>
+        <li>Enable unattended-upgrades for ongoing security patches</li>
+      </ul>
+      <pre style="margin-top:16px"># Enable automatic security updates (recommended)
+sudo apt-get install unattended-upgrades
+sudo dpkg-reconfigure --priority=low unattended-upgrades</pre>
+    </div>
+  </div>
+
+  <!-- BATCH SCRIPT -->
+  <div class="section-header">
+    <span class="section-icon">⚡</span>
+    <h2>Quick-Start: Run on All 5 Servers (via Ansible or parallel-ssh)</h2>
+  </div>
+  <div class="remediation-block">
+    <div class="rem-body">
+      <div class="step-desc" style="margin-bottom:12px">If you use Ansible or parallel-ssh to manage these servers, here is a combined shell script to apply all apt-based patches at once. EOL software and application upgrades still require manual steps per app.</div>
+      <pre>#!/bin/bash
+# CRBT Nodes — Ubuntu Patch Script
+# Run as: sudo bash crbt_patch.sh
+# Apply to: 172.18.229.6, .7, .8, .10, .11, .12
+
+set -e
+echo "=== Updating package lists ==="
+apt-get update -q
+
+echo "=== Upgrading all packages ==="
+DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -q
+DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y -q
+
+echo "=== Installing security hardening ==="
+apt-get install -y unattended-upgrades apparmor apparmor-utils
+
+echo "=== Reloading AppArmor ==="
+systemctl restart apparmor
+aa-enforce /etc/apparmor.d/* 2>/dev/null || true
+
+echo "=== Cleaning up ==="
+apt-get autoremove -y -q
+apt-get autoclean -q
+
+echo "=== Patch complete. REBOOT REQUIRED ==="
+echo "Run: sudo reboot"</pre>
+      <div class="note">⚡ Ansible playbook approach: use <code>ansible-playbook -i inventory.ini patch_crbt.yml</code> with the shell module wrapping the above script for all 5 hosts.</div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div>VA VODACOM CRBT NODES — Qualys Scan Report · June 11, 2026 · Generated by Paytm Security Team</div>
+  <div>544 Active Vulnerabilities · 5 Hosts · Ubuntu 24.04.4 LTS</div>
+</footer>
+
+</body>
+</html>
